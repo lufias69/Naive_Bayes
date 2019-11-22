@@ -17,7 +17,7 @@ def stdev_fitur(X):
     for i in X.transpose().A:
         stdev_0.append(stdev(i.tolist()))
     return np.array(stdev_0)
-    
+
 def prior_(y):
     unik = sorted(set(y))
     dict_p = dict()
@@ -44,9 +44,9 @@ def data_separate(y, complement=False):
 class NaiveBayesClassifier:
     def __init__(self, alpha=1):
         self.alpha = alpha
-        self.dict_nb = 0
         
     def train(self, X, y):
+        self.dict_nb = dict()
         vectorizer = CountVectorizer(binary=True)
         self.model_w = vectorizer.fit(X)
         self.X = self.model_w.transform(X)
@@ -62,8 +62,9 @@ class NaiveBayesClassifier:
             n_yi = np.sum(self.X[index_data[c]].A, axis=0)
             n_y = len(self.X[index_data[c]].A)
             self.dict_nb.update({c:{}})
-            self.dict_nb[c]["n_y"] = n_y
             self.dict_nb[c]["n_yi"] = n_yi
+            self.dict_nb[c]["n_y"] = n_y
+            
             
     def predict(self, X):
         self.X = self.model_w.transform(X)
@@ -82,34 +83,30 @@ class NaiveBayesClassifier:
             result.append(self.class_[list_pst.index(max(list_pst))])
         return result
 
-def prior_(y):
-    unik = sorted(set(y))
-    dict_p = dict()
-    for c in unik:
-        count = y.tolist().count(c)
-        dict_p.update({c:count/len(y)})
-    return dict_p 
+# def prior_(y):
+#     unik = sorted(set(y))
+#     dict_p = dict()
+#     for c in unik:
+#         count = y.tolist().count(c)
+#         dict_p.update({c:count/len(y)})
+#     return dict_p 
 
 
 class GaussianNaiveBayes():
-    def __init__(self,alpha=0):
-        self.alpha=alpha
+    def __init__(self,var_smoothing=.0009):
+        self.var_smoothing=var_smoothing
         self.prior = 0
         self.class_ = 0
-        self.nb_dict=dict()
+        
 
     def train(self, X, y):
         self.X = X
         self.y = y
         self.class_ = sorted(set(y))
-#         self.prior =  prior_(self.y)
+        self.nb_dict=dict()
 
         unik = sorted(set(y))
-        dict_p = dict()
-        for c in unik:
-            count = y.tolist().count(c)
-            dict_p.update({c:count/len(y)})
-        self.prior = dict_p
+        self.prior = prior_(y)
         for c in self.class_:
             index = list()
             for i, c_ in enumerate(self.y):
@@ -119,22 +116,25 @@ class GaussianNaiveBayes():
             self.nb_dict.update({c:{"stdev":[]}})
             self.nb_dict[c]["mean"] = mean_fitur(self.X[index])
             self.nb_dict[c]["stdev"]= stdev_fitur(self.X[index])
-#             self.nb_dict[c]= "stdev":stdev_fitur(self.X[index])}
 
     def predict(self, X):
-        self.X = X
-        self.dict_posterior = dict()
-        for c in self.class_:
-            list_prob=list()
-            for v, mean_, stdev_ in zip(self.X[0].A.tolist()[0], self.nb_dict[c]["mean"],self.nb_dict[c]["stdev"]):
-#                 print(v)
-                if v != 0:
-                    kiri = 1/np.sqrt((2*pi_)*((stdev_+self.alpha)**2))
-                    kanan = np.exp(-(((v-mean_)**2)/(2*((stdev_+self.alpha)**2))))
-                    list_prob.append(kanan*kiri)
-            self.dict_posterior.update({c:np.prod(list_prob)*self.prior[c]})
-        return max(self.dict_posterior.items(), key=operator.itemgetter(1))[0]
-
+        result = list()
+        for d in X.A:
+            if d.sum==0:
+                result.append(self.class_[0])
+                continue
+            post_ = list()
+            for c in self.class_:
+                list_prob=list()
+                for v, mean_, stdev_ in zip(d.tolist(), self.nb_dict[c]["mean"],self.nb_dict[c]["stdev"]):
+                    if v != 0:
+                        kiri = 1/np.sqrt((2*pi_)*((stdev_+self.var_smoothing)**2))
+                        kanan = np.exp(-(((v-mean_)**2)/(2*((stdev_+self.var_smoothing)**2))))
+                        list_prob.append(kanan*kiri)
+                post_.append(np.prod(list_prob)*self.prior[c])
+            result.append(self.class_[post_.index(max(post_))])
+        return result
+        
 class MultinominalNaiveBayes:
     def __init__(self, alpha=1):
         self.alpha = alpha
