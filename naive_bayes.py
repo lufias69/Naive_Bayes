@@ -17,6 +17,15 @@ def stdev_fitur(X):
     for i in X.transpose().A:
         stdev_0.append(stdev(i.tolist()))
     return np.array(stdev_0)
+    
+def prior_(y):
+    unik = sorted(set(y))
+    dict_p = dict()
+    for c in unik:
+        count = y.tolist().count(c)
+        dict_p.update({c:count/len(y)})
+    return dict_p 
+
 
 def data_separate(y, complement=False):
     kelas = sorted(set(y))
