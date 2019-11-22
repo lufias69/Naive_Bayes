@@ -7,16 +7,18 @@ pi_ = math.pi
 from statistics import stdev, mean
 
 def mean_fitur(X):
-        mean_0 = list()
-        for i in X.transpose().A:
-            mean_0.append(i.mean())
-        return np.array(mean_0)
+    return np.mean(X.A, axis=0)
+        # mean_0 = list()
+        # for i in X.transpose().A:
+        #     mean_0.append(i.mean())
+        # return np.array(mean_0)
 
 def stdev_fitur(X):
-    stdev_0 = list()
-    for i in X.transpose().A:
-        stdev_0.append(stdev(i.tolist()))
-    return np.array(stdev_0)
+    return np.std(X.A, axis=0)
+    # stdev_0 = list()
+    # for i in X.transpose().A:
+    #     stdev_0.append(stdev(i.tolist()))
+    # return np.array(stdev_0)
 
 def prior_(y):
     unik = sorted(set(y))
@@ -134,7 +136,7 @@ class GaussianNaiveBayes():
                 post_.append(np.prod(list_prob)*self.prior[c])
             result.append(self.class_[post_.index(max(post_))])
         return result
-        
+
 class MultinominalNaiveBayes:
     def __init__(self, alpha=1):
         self.alpha = alpha
