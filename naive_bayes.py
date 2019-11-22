@@ -4,8 +4,8 @@ from collections import Counter
 import operator
 import math
 pi_ = math.pi
-
 from statistics import stdev, mean
+
 def mean_fitur(X):
         mean_0 = list()
         for i in X.transpose().A:
@@ -32,6 +32,47 @@ def data_separate(y, complement=False):
         dict_index.update({c:index})
     return dict_index
 
+class NaiveBayesClassifier:
+    def __init__(self, alpha=1):
+        self.alpha = alpha
+        self.dict_nb = 0
+        
+    def train(self, X, y):
+        vectorizer = CountVectorizer(binary=True)
+        self.model_w = vectorizer.fit(X)
+        self.X = self.model_w.transform(X)
+        
+        self.class_ = sorted(set(y))
+        self.prior = prior_(y)
+        index_data = data_separate(y)
+        self.an = len(self.X.A[0])
+#         self.X = X
+        
+        self.dict_nb = dict()
+        for c in self.class_:
+            n_yi = np.sum(self.X[index_data[c]].A, axis=0)
+            n_y = len(self.X[index_data[c]].A)
+            self.dict_nb.update({c:{}})
+            self.dict_nb[c]["n_y"] = n_y
+            self.dict_nb[c]["n_yi"] = n_yi
+            
+    def predict(self, X):
+        self.X = self.model_w.transform(X)
+        result = list()
+        for i in self.X.A:
+            index = list()
+            for ix, f in enumerate(i):
+                if f>0:
+                    index.append(ix)
+            
+            list_pst = list()
+            for c in self.class_:
+                weight = (self.dict_nb[c]["n_yi"][index]+self.alpha)/(self.dict_nb[c]["n_y"]+self.an)
+                posterior = np.prod(weight)*self.prior[c]
+                list_pst.append(posterior)
+            result.append(self.class_[list_pst.index(max(list_pst))])
+        return result
+
 def prior_(y):
     unik = sorted(set(y))
     dict_p = dict()
@@ -39,40 +80,6 @@ def prior_(y):
         count = y.tolist().count(c)
         dict_p.update({c:count/len(y)})
     return dict_p 
-
-class MultinominalNaiveBayes:
-    def __init__(self, alpha=1):
-        self.alpha = alpha
-        self.dict_nb = 0
-        
-    def train(self, X, y):
-        self.class_ = sorted(set(y))
-        self.prior = prior_(y)
-        index_data = data_separate(y)
-        self.an = len(X.A[0])
-        self.X = X
-        
-        self.dict_nb = dict()
-        for c in self.class_:
-            n_yi = np.sum(self.X[index_data[c]].A, axis=0)
-            n_y = self.X[index_data[c]].A.sum()
-            self.dict_nb.update({c:{}})
-            self.dict_nb[c]['hat_theta'] = n_yi/(n_y+self.an)
-            self.dict_nb[c]["n_y"] = n_y
-            
-    def predict(self, X):
-        self.X = X
-        result = list()
-        for i in self.X.A:
-            list_pst = list()
-            for c in self.class_:
-                laplace = self.alpha/(self.dict_nb[c]["n_y"]+self.an)
-                x = self.dict_nb[c]["hat_theta"]+laplace
-                posterior = np.prod(x**i)*self.prior[c]
-                list_pst.append(posterior)
-            result.append(self.class_[list_pst.index(max(list_pst))])
-        return result
-
 
 
 class GaussianNaiveBayes():
@@ -119,6 +126,38 @@ class GaussianNaiveBayes():
             self.dict_posterior.update({c:np.prod(list_prob)*self.prior[c]})
         return max(self.dict_posterior.items(), key=operator.itemgetter(1))[0]
 
+class MultinominalNaiveBayes:
+    def __init__(self, alpha=1):
+        self.alpha = alpha
+        self.dict_nb = 0
+        
+    def train(self, X, y):
+        self.class_ = sorted(set(y))
+        self.prior = prior_(y)
+        index_data = data_separate(y)
+        self.an = len(X.A[0])
+        self.X = X
+        
+        self.dict_nb = dict()
+        for c in self.class_:
+            n_yi = np.sum(self.X[index_data[c]].A, axis=0)
+            n_y = self.X[index_data[c]].A.sum()
+            self.dict_nb.update({c:{}})
+            self.dict_nb[c]["n_y"] = n_y
+            self.dict_nb[c]["n_yi"] = n_yi
+            
+    def predict(self, X):
+        self.X = X
+        result = list()
+        for i in self.X.A:
+            list_pst = list()
+            for c in self.class_:
+                hat_theta = (self.dict_nb[c]["n_yi"]+self.alpha)/(self.dict_nb[c]["n_y"]+self.an)
+                posterior = np.prod(hat_theta**i)*self.prior[c]
+                list_pst.append(posterior)
+            result.append(self.class_[list_pst.index(max(list_pst))])
+        return result
+
 class ComplementNaiveBayes:
     def __init__(self, alpha=1):
         self.alpha = alpha
@@ -127,12 +166,27 @@ class ComplementNaiveBayes:
     def train(self, X, y):
         self.class_ = sorted(set(y))
         self.prior = prior_(y)
-        index_data = data_separate(y, complement=True) #complement=False
+        self.index_data = data_separate(y, complement=True) #complement=False
         self.an = len(X.A[0])
         self.X = X
         
         self.dict_nb = dict()
         
+        for c in self.class_:
+            self.n_yi = np.sum(self.X[self.index_data[c]].A, axis=0)
+            self.n_y = self.X[self.index_data[c]].A.sum()
+            self.dict_nb.update({c:{}})
+            hat_theta = (self.n_yi+self.alpha)/(self.n_y+self.an)
+            w_ci = np.log(hat_theta)
+            
+            abs_sum_wci= np.sum(np.abs(w_ci))
+            norm_wci = w_ci/abs_sum_wci
+            self.dict_nb[c]['w_ci'] = norm_wci
+            self.dict_nb[c]["n_y"] = self.n_y
+            
+    def set_alpha(self, alpha =1):
+        self.alpha = alpha
+        self.dict_nb = dict()
         for c in self.class_:
             self.n_yi = np.sum(self.X[index_data[c]].A, axis=0)
             self.n_y = self.X[index_data[c]].A.sum()
@@ -145,19 +199,6 @@ class ComplementNaiveBayes:
             self.dict_nb[c]['w_ci'] = norm_wci
             self.dict_nb[c]["n_y"] = self.n_y
             
-    def set_alpha(self, alpha =1):
-        self.alpha = alpha
-#         self.dict_nb = dict()
-        for c in self.class_:
-            self.dict_nb.update({c:{}})
-            hat_theta = (self.n_yi+self.alpha)/(self.n_y+self.an)
-            w_ci = np.log(hat_theta)
-            
-            abs_sum_wci= np.sum(np.abs(w_ci))
-            norm_wci = w_ci/abs_sum_wci
-            self.dict_nb[c]['w_ci'] = norm_wci
-#             self.dict_nb[c]["n_y"] = self.n_y
-            
     def predict(self, X):
         try:
             self.X = X
@@ -165,8 +206,8 @@ class ComplementNaiveBayes:
             for i in self.X.A:
                 list_pst = list()
                 for c in self.class_:
-                    x = self.dict_nb[c]["w_ci"]
-                    posterior = np.sum(x*i)
+                    # x = self.dict_nb[c]["w_ci"]
+                    posterior = np.sum(self.dict_nb[c]["w_ci"]*i)
                     list_pst.append(posterior)
                 result.append(self.class_[list_pst.index(min(list_pst))])
             return result
@@ -447,4 +488,38 @@ class ComplementNaiveBayes:
 #         except:
 #             print("err404or")
 #             return max(self.prior.items(), key=operator.itemgetter(1))[0]
+
+
+# class MultinominalNaiveBayes:
+#     def __init__(self, alpha=1):
+#         self.alpha = alpha
+#         self.dict_nb = 0
+        
+#     def train(self, X, y):
+#         self.class_ = sorted(set(y))
+#         self.prior = prior_(y)
+#         index_data = data_separate(y)
+#         self.an = len(X.A[0])
+#         self.X = X
+        
+#         self.dict_nb = dict()
+#         for c in self.class_:
+#             n_yi = np.sum(self.X[index_data[c]].A, axis=0)
+#             n_y = self.X[index_data[c]].A.sum()
+#             self.dict_nb.update({c:{}})
+#             self.dict_nb[c]['hat_theta'] = n_yi/(n_y+self.an)
+#             self.dict_nb[c]["n_y"] = n_y
             
+#     def predict(self, X):
+#         self.X = X
+#         result = list()
+#         for i in self.X.A:
+#             list_pst = list()
+#             for c in self.class_:
+#                 laplace = self.alpha/(self.dict_nb[c]["n_y"]+self.an)
+#                 x = self.dict_nb[c]["hat_theta"]+laplace
+#                 posterior = np.prod(x**i)*self.prior[c]
+#                 list_pst.append(posterior)
+#             result.append(self.class_[list_pst.index(max(list_pst))])
+#         return result
+
