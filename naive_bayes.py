@@ -138,8 +138,7 @@ class GaussianNaiveBayes():
 class MultinominalNaiveBayes:
     def __init__(self, alpha=1):
         self.alpha = alpha
-        
-        
+           
     def train(self, X, y):
         self.dict_nb = dict()
         self.class_ = sorted(set(y))
