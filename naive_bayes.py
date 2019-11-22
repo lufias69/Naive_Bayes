@@ -57,8 +57,7 @@ class NaiveBayesClassifier:
         self.prior = prior_(y)
         index_data = data_separate(y)
         self.an = len(self.X.A[0])
-#         self.X = X
-        
+ 
         self.dict_nb = dict()
         for c in self.class_:
             n_yi = np.sum(self.X[index_data[c]].A, axis=0)
@@ -76,7 +75,9 @@ class NaiveBayesClassifier:
             for ix, f in enumerate(i):
                 if f>0:
                     index.append(ix)
-            
+            if len(index)==0:
+                result.append(self.class_[0])
+                continue
             list_pst = list()
             for c in self.class_:
                 weight = (self.dict_nb[c]["n_yi"][index]+self.alpha)/(self.dict_nb[c]["n_y"]+self.an)
@@ -97,9 +98,6 @@ class NaiveBayesClassifier:
 class GaussianNaiveBayes():
     def __init__(self,var_smoothing=.0009):
         self.var_smoothing=var_smoothing
-        self.prior = 0
-        self.class_ = 0
-        
 
     def train(self, X, y):
         self.X = X
@@ -140,9 +138,10 @@ class GaussianNaiveBayes():
 class MultinominalNaiveBayes:
     def __init__(self, alpha=1):
         self.alpha = alpha
-        self.dict_nb = 0
+        
         
     def train(self, X, y):
+        self.dict_nb = dict()
         self.class_ = sorted(set(y))
         self.prior = prior_(y)
         index_data = data_separate(y)
@@ -172,17 +171,16 @@ class MultinominalNaiveBayes:
 class ComplementNaiveBayes:
     def __init__(self, alpha=1):
         self.alpha = alpha
-        self.dict_nb = 0
-        
+
     def train(self, X, y):
+        self.dict_nb = dict()
         self.class_ = sorted(set(y))
         self.prior = prior_(y)
         self.index_data = data_separate(y, complement=True) #complement=False
         self.an = len(X.A[0])
         self.X = X
-        
+
         self.dict_nb = dict()
-        
         for c in self.class_:
             self.n_yi = np.sum(self.X[self.index_data[c]].A, axis=0)
             self.n_y = self.X[self.index_data[c]].A.sum()
@@ -204,7 +202,6 @@ class ComplementNaiveBayes:
             self.dict_nb.update({c:{}})
             hat_theta = (self.n_yi+self.alpha)/(self.n_y+self.an)
             w_ci = np.log(hat_theta)
-            
             abs_sum_wci= np.sum(np.abs(w_ci))
             norm_wci = w_ci/abs_sum_wci
             self.dict_nb[c]['w_ci'] = norm_wci
