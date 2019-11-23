@@ -5,16 +5,18 @@ import operator
 import math
 pi_ = math.pi
 from statistics import stdev, mean
+from scipy import sparse
 
 def mean_fitur(X):
-    return np.mean(X.A, axis=0)
+    return sparse.csr_matrix(X.todense().mean(0))
+    # return np.mean(X.A, axis=0)
         # mean_0 = list()
         # for i in X.transpose().A:
         #     mean_0.append(i.mean())
         # return np.array(mean_0)
 
 def stdev_fitur(X):
-    return np.std(X.A, axis=0)
+    return sparse.csr_matrix(X.todense().std(0))
     # stdev_0 = list()
     # for i in X.transpose().A:
     #     stdev_0.append(stdev(i.tolist()))
@@ -56,21 +58,25 @@ class NaiveBayesClassifier:
         self.class_ = sorted(set(y))
         self.prior = prior_(y)
         index_data = data_separate(y)
-        self.an = len(self.X.A[0])
+        self.an = self.X.shape[1]
  
         self.dict_nb = dict()
         for c in self.class_:
-            n_yi = np.sum(self.X[index_data[c]].A, axis=0)
-            n_y = len(self.X[index_data[c]].A)
+            n_yi = np.sum(self.X[index_data[c]], axis=0)
+            # n_y = len(self.X[index_data[c]].A)
+            n_y = self.X[index_data[c]].shape[0]
             self.dict_nb.update({c:{}})
             self.dict_nb[c]["n_yi"] = n_yi
             self.dict_nb[c]["n_y"] = n_y
             
             
-    def predict(self, X):
-        self.X = self.model_w.transform(X)
+    def predict(self, X_):
+        self.X_ = self.model_w.transform(X_)
+        # print(self.X_.shape)
+        # print(self.an)
+        # print(len(self.dict_nb["spam"]["n_yi"].A[0]))
         result = list()
-        for i in self.X.A:
+        for i in self.X_.A:
             index = list()
             for ix, f in enumerate(i):
                 if f>0:
@@ -80,7 +86,9 @@ class NaiveBayesClassifier:
                 continue
             list_pst = list()
             for c in self.class_:
-                weight = (self.dict_nb[c]["n_yi"][index]+self.alpha)/(self.dict_nb[c]["n_y"]+self.an)
+                ny_i_ = self.dict_nb[c]["n_yi"].A[0][index]
+                # print(ny_i_)
+                weight = (ny_i_+self.alpha)/(self.dict_nb[c]["n_y"]+self.an)
                 posterior = np.prod(weight)*self.prior[c]
                 list_pst.append(posterior)
             result.append(self.class_[list_pst.index(max(list_pst))])
@@ -126,7 +134,7 @@ class GaussianNaiveBayes():
             post_ = list()
             for c in self.class_:
                 list_prob=list()
-                for v, mean_, stdev_ in zip(d.tolist(), self.nb_dict[c]["mean"],self.nb_dict[c]["stdev"]):
+                for v, mean_, stdev_ in zip(d.tolist(), self.nb_dict[c]["mean"].A[0],self.nb_dict[c]["stdev"].A[0]):
                     if v != 0:
                         kiri = 1/np.sqrt((2*pi_)*((stdev_+self.var_smoothing)**2))
                         kanan = np.exp(-(((v-mean_)**2)/(2*((stdev_+self.var_smoothing)**2))))
@@ -149,8 +157,8 @@ class MultinominalNaiveBayes:
         
         self.dict_nb = dict()
         for c in self.class_:
-            n_yi = np.sum(self.X[index_data[c]].A, axis=0)
-            n_y = self.X[index_data[c]].A.sum()
+            n_yi = np.sum(self.X[index_data[c]], axis=0)
+            n_y = self.X[index_data[c]].sum()
             self.dict_nb.update({c:{}})
             self.dict_nb[c]["n_y"] = n_y
             self.dict_nb[c]["n_yi"] = n_yi
@@ -161,7 +169,7 @@ class MultinominalNaiveBayes:
         for i in self.X.A:
             list_pst = list()
             for c in self.class_:
-                hat_theta = (self.dict_nb[c]["n_yi"]+self.alpha)/(self.dict_nb[c]["n_y"]+self.an)
+                hat_theta = (self.dict_nb[c]["n_yi"].A[0]+self.alpha)/(self.dict_nb[c]["n_y"]+self.an)
                 posterior = np.prod(hat_theta**i)*self.prior[c]
                 list_pst.append(posterior)
             result.append(self.class_[list_pst.index(max(list_pst))])
@@ -181,8 +189,8 @@ class ComplementNaiveBayes:
 
         self.dict_nb = dict()
         for c in self.class_:
-            self.n_yi = np.sum(self.X[self.index_data[c]].A, axis=0)
-            self.n_y = self.X[self.index_data[c]].A.sum()
+            self.n_yi = np.sum(self.X[self.index_data[c]], axis=0)
+            self.n_y = self.X[self.index_data[c]].sum()
             self.dict_nb.update({c:{}})
             hat_theta = (self.n_yi+self.alpha)/(self.n_y+self.an)
             w_ci = np.log(hat_theta)
@@ -196,8 +204,8 @@ class ComplementNaiveBayes:
         self.alpha = alpha
         self.dict_nb = dict()
         for c in self.class_:
-            self.n_yi = np.sum(self.X[index_data[c]].A, axis=0)
-            self.n_y = self.X[index_data[c]].A.sum()
+            self.n_yi = np.sum(self.X[index_data[c]], axis=0)
+            self.n_y = self.X[index_data[c]].sum()
             self.dict_nb.update({c:{}})
             hat_theta = (self.n_yi+self.alpha)/(self.n_y+self.an)
             w_ci = np.log(hat_theta)
@@ -214,7 +222,7 @@ class ComplementNaiveBayes:
                 list_pst = list()
                 for c in self.class_:
                     # x = self.dict_nb[c]["w_ci"]
-                    posterior = np.sum(self.dict_nb[c]["w_ci"]*i)
+                    posterior = np.sum(self.dict_nb[c]["w_ci"].A[0]*i)
                     list_pst.append(posterior)
                 result.append(self.class_[list_pst.index(min(list_pst))])
             return result
