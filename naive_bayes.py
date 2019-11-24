@@ -1,4 +1,127 @@
+# import numpy as np
+# from sklearn.feature_extraction.text import CountVectorizer
+# from collections import Counter
+# import operator
+# import math
+# pi_ = math.pi
+# from statistics import stdev, mean
+# from scipy import sparse
+
+# def mean_fitur(X):
+#     return sparse.csr_matrix(X.todense().mean(0))
+#     # return np.mean(X.A, axis=0)
+#         # mean_0 = list()
+#         # for i in X.transpose().A:
+#         #     mean_0.append(i.mean())
+#         # return np.array(mean_0)
+
+# def stdev_fitur(X):
+#     return sparse.csr_matrix(X.todense().std(0))
+#     # stdev_0 = list()
+#     # for i in X.transpose().A:
+#     #     stdev_0.append(stdev(i.tolist()))
+#     # return np.array(stdev_0)
+
+# def prior_(y):
+#     unik = sorted(set(y))
+#     dict_p = dict()
+#     for c in unik:
+#         count = y.tolist().count(c)
+#         dict_p.update({c:count/len(y)})
+#     return dict_p 
+
+
+# def data_separate(y, complement=False):
+#     kelas = sorted(set(y))
+    
+#     dict_index = dict()
+#     for c in kelas:
+#         index = list()
+#         for ix, c_ in enumerate(y):
+#             if complement==False and c==c_:
+#                 index.append(ix)
+#             elif complement==True and c!=c_:
+#                 index.append(ix)
+#         dict_index.update({c:index})
+#     return dict_index
+
+# class NaiveBayesClassifier:
+#     def __init__(self, alpha=1):
+#         self.alpha = alpha
+        
+#     def train(self, X, y):
+#         self.dict_nb = dict()
+#         vectorizer = CountVectorizer(binary=True)
+#         self.model_w = vectorizer.fit(X)
+#         self.X = self.model_w.transform(X)
+        
+#         self.class_ = sorted(set(y))
+#         self.prior = prior_(y)
+#         index_data = data_separate(y)
+#         self.an = self.X.shape[1]
+ 
+#         self.dict_nb = dict()
+#         for c in self.class_:
+#             n_yi = np.sum(self.X[index_data[c]], axis=0)
+#             # n_y = len(self.X[index_data[c]].A)
+#             n_y = self.X[index_data[c]].shape[0]
+#             self.dict_nb.update({c:{}})
+#             self.dict_nb[c]["n_yi"] = n_yi
+#             self.dict_nb[c]["n_y"] = n_y
+            
+            
+#     def predict(self, X_):
+#         self.X_ = self.model_w.transform(X_)
+#         result = list()
+#         for i in self.X_.A:
+#             index = list()
+#             for ix, f in enumerate(i):
+#                 if f>0:
+#                     index.append(ix)
+#             if len(index)==0:
+#                 result.append(self.class_[0])
+#                 continue
+#             list_pst = list()
+#             for c in self.class_:
+#                 ny_i_ = self.dict_nb[c]["n_yi"].A[0][index]
+#                 # print(ny_i_)
+#                 weight = (ny_i_+self.alpha)/(self.dict_nb[c]["n_y"]+self.an)
+#                 posterior = np.prod(weight)*self.prior[c]
+#                 list_pst.append(posterior)
+#             result.append(self.class_[list_pst.index(max(list_pst))])
+#         return result
+
+#     def predict_(self, X_):
+#         self.X_ = self.model_w.transform(X_)
+#         result = list()
+#         # for i in self.X_.A:
+#         #     index = list()
+#         #     for ix, f in enumerate(i):
+#         #         if f>0:
+#         #             index.append(ix)
+#         #     if len(index)==0:
+#         #         result.append(self.class_[0])
+#         #         continue
+#         #     list_pst = list()
+#         for c in self.class_:
+#             ny_i_ = self.dict_nb[c]["n_yi"].A
+#             # print(ny_i_)
+#             weight = (ny_i_+self.alpha)/(self.dict_nb[c]["n_y"]+self.an)
+#             posterior = np.prod(weight**(self.X_.todense()))*self.prior[c]
+#             list_pst.append(posterior)
+#         result.append(self.class_[list_pst.index(max(list_pst))])
+#         return result
+
+# def prior_(y):
+#     unik = sorted(set(y))
+#     dict_p = dict()
+#     for c in unik:
+#         count = y.tolist().count(c)
+#         dict_p.update({c:count/len(y)})
+#     return dict_p 
+
 import numpy as np
+import pandas as pd
 from sklearn.feature_extraction.text import CountVectorizer
 from collections import Counter
 import operator
@@ -45,6 +168,15 @@ def data_separate(y, complement=False):
         dict_index.update({c:index})
     return dict_index
 
+def get_label(dc):
+    result = list()
+    x=pd.DataFrame.from_dict(dc)
+    hasil = x.values
+    label = x.keys().tolist()
+    for i in hasil:
+        result.append(label[i.tolist().index(max(i))])
+    return result
+
 class NaiveBayesClassifier:
     def __init__(self, alpha=1):
         self.alpha = alpha
@@ -59,6 +191,8 @@ class NaiveBayesClassifier:
         self.prior = prior_(y)
         index_data = data_separate(y)
         self.an = self.X.shape[1]
+        if self.X.shape[0]!=len(y):
+            return "jumlah data dan label tidak seimbang, jumlah data = "+str(self.X.shape[0])+" dan jumlah label = "+str(len(y))
  
         self.dict_nb = dict()
         for c in self.class_:
@@ -72,9 +206,6 @@ class NaiveBayesClassifier:
             
     def predict(self, X_):
         self.X_ = self.model_w.transform(X_)
-        # print(self.X_.shape)
-        # print(self.an)
-        # print(len(self.dict_nb["spam"]["n_yi"].A[0]))
         result = list()
         for i in self.X_.A:
             index = list()
@@ -94,15 +225,17 @@ class NaiveBayesClassifier:
             result.append(self.class_[list_pst.index(max(list_pst))])
         return result
 
-# def prior_(y):
-#     unik = sorted(set(y))
-#     dict_p = dict()
-#     for c in unik:
-#         count = y.tolist().count(c)
-#         dict_p.update({c:count/len(y)})
-#     return dict_p 
-
-
+    def predict_(self, X_):
+        self.X_ = self.model_w.transform(X_)
+        dict_posterior = dict()
+        for c in self.class_:
+            ny_i_ = self.dict_nb[c]["n_yi"].A[0]
+            weight = (ny_i_+self.alpha)/(self.dict_nb[c]["n_y"]+self.an)
+            proud = np.prod(weight**self.X_.A, axis = 1)
+            posterior = proud*self.prior[c]
+            dict_posterior.update({c:posterior})
+        return get_label(dict_posterior)
+        
 class GaussianNaiveBayes():
     def __init__(self,var_smoothing=.0009):
         self.var_smoothing=var_smoothing
