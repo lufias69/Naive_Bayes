@@ -1,125 +1,3 @@
-# import numpy as np
-# from sklearn.feature_extraction.text import CountVectorizer
-# from collections import Counter
-# import operator
-# import math
-# pi_ = math.pi
-# from statistics import stdev, mean
-# from scipy import sparse
-
-# def mean_fitur(X):
-#     return sparse.csr_matrix(X.todense().mean(0))
-#     # return np.mean(X.A, axis=0)
-#         # mean_0 = list()
-#         # for i in X.transpose().A:
-#         #     mean_0.append(i.mean())
-#         # return np.array(mean_0)
-
-# def stdev_fitur(X):
-#     return sparse.csr_matrix(X.todense().std(0))
-#     # stdev_0 = list()
-#     # for i in X.transpose().A:
-#     #     stdev_0.append(stdev(i.tolist()))
-#     # return np.array(stdev_0)
-
-# def prior_(y):
-#     unik = sorted(set(y))
-#     dict_p = dict()
-#     for c in unik:
-#         count = y.tolist().count(c)
-#         dict_p.update({c:count/len(y)})
-#     return dict_p 
-
-
-# def data_separate(y, complement=False):
-#     kelas = sorted(set(y))
-    
-#     dict_index = dict()
-#     for c in kelas:
-#         index = list()
-#         for ix, c_ in enumerate(y):
-#             if complement==False and c==c_:
-#                 index.append(ix)
-#             elif complement==True and c!=c_:
-#                 index.append(ix)
-#         dict_index.update({c:index})
-#     return dict_index
-
-# class NaiveBayesClassifier:
-#     def __init__(self, alpha=1):
-#         self.alpha = alpha
-        
-#     def train(self, X, y):
-#         self.dict_nb = dict()
-#         vectorizer = CountVectorizer(binary=True)
-#         self.model_w = vectorizer.fit(X)
-#         self.X = self.model_w.transform(X)
-        
-#         self.class_ = sorted(set(y))
-#         self.prior = prior_(y)
-#         index_data = data_separate(y)
-#         self.an = self.X.shape[1]
- 
-#         self.dict_nb = dict()
-#         for c in self.class_:
-#             n_yi = np.sum(self.X[index_data[c]], axis=0)
-#             # n_y = len(self.X[index_data[c]].A)
-#             n_y = self.X[index_data[c]].shape[0]
-#             self.dict_nb.update({c:{}})
-#             self.dict_nb[c]["n_yi"] = n_yi
-#             self.dict_nb[c]["n_y"] = n_y
-            
-            
-#     def predict(self, X_):
-#         self.X_ = self.model_w.transform(X_)
-#         result = list()
-#         for i in self.X_.A:
-#             index = list()
-#             for ix, f in enumerate(i):
-#                 if f>0:
-#                     index.append(ix)
-#             if len(index)==0:
-#                 result.append(self.class_[0])
-#                 continue
-#             list_pst = list()
-#             for c in self.class_:
-#                 ny_i_ = self.dict_nb[c]["n_yi"].A[0][index]
-#                 # print(ny_i_)
-#                 weight = (ny_i_+self.alpha)/(self.dict_nb[c]["n_y"]+self.an)
-#                 posterior = np.prod(weight)*self.prior[c]
-#                 list_pst.append(posterior)
-#             result.append(self.class_[list_pst.index(max(list_pst))])
-#         return result
-
-#     def predict_(self, X_):
-#         self.X_ = self.model_w.transform(X_)
-#         result = list()
-#         # for i in self.X_.A:
-#         #     index = list()
-#         #     for ix, f in enumerate(i):
-#         #         if f>0:
-#         #             index.append(ix)
-#         #     if len(index)==0:
-#         #         result.append(self.class_[0])
-#         #         continue
-#         #     list_pst = list()
-#         for c in self.class_:
-#             ny_i_ = self.dict_nb[c]["n_yi"].A
-#             # print(ny_i_)
-#             weight = (ny_i_+self.alpha)/(self.dict_nb[c]["n_y"]+self.an)
-#             posterior = np.prod(weight**(self.X_.todense()))*self.prior[c]
-#             list_pst.append(posterior)
-#         result.append(self.class_[list_pst.index(max(list_pst))])
-#         return result
-
-# def prior_(y):
-#     unik = sorted(set(y))
-#     dict_p = dict()
-#     for c in unik:
-#         count = y.tolist().count(c)
-#         dict_p.update({c:count/len(y)})
-#     return dict_p 
-
 import numpy as np
 import pandas as pd
 from sklearn.feature_extraction.text import CountVectorizer
@@ -129,6 +7,20 @@ import math
 pi_ = math.pi
 from statistics import stdev, mean
 from scipy import sparse
+
+def vars(a, axis=None):
+    """ Variance of sparse matrix a
+    var = mean(a**2) - mean(a)**2
+    """
+    a_squared = a.copy()
+    a_squared.data **= 2
+    return a_squared.mean(axis) - np.square(a.mean(axis))
+
+def stds(a, axis=None):
+    """ Standard deviation of sparse matrix a
+    std = sqrt(var(a))
+    """
+    return np.sqrt(vars(a, axis))
 
 def mean_fitur(X):
     return sparse.csr_matrix(X.todense().mean(0))
@@ -145,6 +37,12 @@ def stdev_fitur(X):
     #     stdev_0.append(stdev(i.tolist()))
     # return np.array(stdev_0)
 
+def mean_fitur_(X):
+    return sparse.csr_matrix(X.mean(0))
+
+def stdev_fitur_(X):
+    return sparse.csr_matrix(stds(X, 0))
+
 def prior_(y):
     unik = sorted(set(y))
     dict_p = dict()
@@ -152,7 +50,6 @@ def prior_(y):
         count = y.tolist().count(c)
         dict_p.update({c:count/len(y)})
     return dict_p 
-
 
 def data_separate(y, complement=False):
     kelas = sorted(set(y))
@@ -168,13 +65,20 @@ def data_separate(y, complement=False):
         dict_index.update({c:index})
     return dict_index
 
-def get_label(dc):
+def get_label_(dc):
     result = list()
     x=pd.DataFrame.from_dict(dc)
     hasil = x.values
     label = x.keys().tolist()
     for i in hasil:
         result.append(label[i.tolist().index(max(i))])
+    return result
+
+def get_label(hasil, class__):
+    result = list()
+    label = class__#x.keys().tolist()
+    for i in np.matrix(hasil).transpose().A:
+        result.append(class__[i.tolist().index(max(i))])
     return result
 
 class NaiveBayesClassifier:
@@ -228,21 +132,24 @@ class NaiveBayesClassifier:
     def predict_(self, X_):
         self.X_ = self.model_w.transform(X_)
         dict_posterior = dict()
+        list_posterior = list()
         for c in self.class_:
             ny_i_ = self.dict_nb[c]["n_yi"].A[0]
             weight = (ny_i_+self.alpha)/(self.dict_nb[c]["n_y"]+self.an)
             proud = np.prod(weight**self.X_.A, axis = 1)
             posterior = proud*self.prior[c]
-            dict_posterior.update({c:posterior})
-        return get_label(dict_posterior)
+            # dict_posterior.update({c:posterior})
+            list_posterior.append(posterior)
+        return get_label(list_posterior, self.class_)
         
-class GaussianNaiveBayes():
+
+class Gaussian():
     def __init__(self,var_smoothing=.0009):
         self.var_smoothing=var_smoothing
 
     def train(self, X, y):
         self.X = X
-        self.y = y
+        self.y = np.array(y)
         self.class_ = sorted(set(y))
         self.nb_dict=dict()
 
@@ -255,8 +162,8 @@ class GaussianNaiveBayes():
                     index.append(i)
             self.nb_dict.update({c:{"mean":[]}})
             self.nb_dict.update({c:{"stdev":[]}})
-            self.nb_dict[c]["mean"] = mean_fitur(self.X[index])
-            self.nb_dict[c]["stdev"]= stdev_fitur(self.X[index])
+            self.nb_dict[c]["mean"] = mean_fitur_(self.X[index])
+            self.nb_dict[c]["stdev"]= stdev_fitur_(self.X[index])
 
     def predict(self, X):
         result = list()
@@ -274,7 +181,21 @@ class GaussianNaiveBayes():
                         list_prob.append(kanan*kiri)
                 post_.append(np.prod(list_prob)*self.prior[c])
             result.append(self.class_[post_.index(max(post_))])
-        return result
+        return np.array(result)
+
+    def predict_(self, X):
+        result = list()
+        self.list_posterior = list()
+        for c in self.class_:
+            sqrt_2pi = np.sqrt((2*pi_))
+            stdev_ = (self.nb_dict[c]["stdev"].A[0]+self.var_smoothing)**2
+            mean_ = self.nb_dict[c]["mean"].A[0]
+            kiri = 1/(sqrt_2pi*(stdev_))
+            kanan = ((X.A-mean_)**2)/(2*stdev_)
+            kanan = np.exp(-kanan)
+            liklihood = (kanan*kiri)**X.A
+            self.list_posterior.append(np.prod(liklihood, axis =1)*self.prior[c])
+        return np.array(get_label(self.list_posterior, self.class_))
 
 class MultinominalNaiveBayes:
     def __init__(self, alpha=1):
@@ -306,7 +227,7 @@ class MultinominalNaiveBayes:
                 posterior = np.prod(hat_theta**i)*self.prior[c]
                 list_pst.append(posterior)
             result.append(self.class_[list_pst.index(max(list_pst))])
-        return result
+        return np.array(result)
 
 class ComplementNaiveBayes:
     def __init__(self, alpha=1):
@@ -361,313 +282,4 @@ class ComplementNaiveBayes:
             return result
         except:
             return [self.class_[0]]
-
-# class NaiveBayesClassifier:
-#     def __init__(self, alpha = 1):
-#         self.dic_data_index = dict()
-#         self.dic_data_by_class = dict()
-#         self.dic_data_posterior = dict()
-#         self.dic_data_prob_fitur = dict()
-#         self.prior = dict()
-#         self.class_ = 0
-#         self.alpha = alpha
-#         self.list_post = list()
-        
-#     def train (self, X, y):
-#         self.X = X
-#         self.y = y
-        
-#         vectorizer = CountVectorizer(binary=True)
-#         self.X = vectorizer.fit_transform(X).A
-#         self.fitur = vectorizer.get_feature_names()
-#         self.len_fitur = len(self.fitur)
-#         self.y = np.array(self.y)
-#         self.class_ = sorted(set(y))
-        
-#         self.prior_class = dict(zip(Counter(self.y).keys(), Counter(self.y).values()))
-#         self.count_doc_c = self.prior_class.copy()
-#         for key, value in self.prior_class.items():
-# #             self.count_doc_c.update({key:len(self.y)})
-#             self.prior_class.update({key:value/len(self.y)})
-        
-#         #menghitung jumlah class
-#         self.len_data = len(self.y)
-
-#         #mencari index data untuk class tertentu
-# #         self.dic_data_index = dict()
-#         for i in self.class_:
-#             isi_list = list()
-#             for index, j in enumerate(self.y):
-#         #         print(j)
-#                 if i == j:
-#                     isi_list.append(index)
-#             self.dic_data_index.update({i:isi_list})
-            
-# #         self.dic_data_by_class = dict()
-#         for key, value in self.dic_data_index.items():
-#             self.dic_data_by_class.update({key:(self.X[value])})
-#         # del self.dic_data_index
-        
-#         self.count_fitur_c = dict()
-#         self.dic_data_prob_fitur = dict()
-#         for c, value in self.dic_data_by_class.items():
-#             count_per_doc = list()
-#             prob_fitur = list()
-#             sum_value  = value.sum()
-#             for ix, f in enumerate(value.transpose()):
-#                 count_per_doc.append(f.sum())
-#                 prob_fitur.append((f.sum()/(len(value)+self.len_fitur)))
-
-#             _dict_count_fitur = dict(zip(self.fitur, count_per_doc))
-#             bobot_fitur = dict(zip(self.fitur,prob_fitur))
-            
-#             self.count_fitur_c.update({c:_dict_count_fitur})
-#             self.dic_data_prob_fitur.update({c:bobot_fitur})
-            
-    
-#     def predict(self, X):
-#         if self.alpha <= 0:
-#             raise Exception("alpha tidak boleh kurang dari atau sama dengan 0, alpha="+str(self.alpha)) 
-#         X = sorted(set(X.split()))
-#         try:
-#             self.dict_predict = dict()
-#             for c, value in self.dic_data_prob_fitur.items():
-
-#                 bobot_fitur = list()
-#                 for kata in X:
-#                     if kata in value:
-#                         bobot_fitur.append((self.count_fitur_c[c][kata]+self.alpha)/(self.count_doc_c[c]+self.len_fitur))
-#                         self.list_post.append("P({}|{})=({}+{})/({}+{} = {})"
-#                         .format(kata,c,self.count_fitur_c[c][kata],self.alpha,self.count_doc_c[c],self.len_fitur, (self.count_fitur_c[c][kata]+self.alpha)/(self.count_doc_c[c]+self.len_fitur)))
-                  
-#                 if len(bobot_fitur)>0:
-#                     post_prior = np.prod(bobot_fitur)*self.prior_class[c]
-#                     bobot_fitur_ = [str(round(x, 3)) for x in bobot_fitur]
-#                     self.list_post.append("P({}|{}) = {} x {} = {}".format(c,"X",self.prior_class[c], " x ".join(bobot_fitur_), post_prior,20))
-#                     self.list_post.append("===================================")
-#                     self.dict_predict.update({c:post_prior})
-#             return max(self.dict_predict.items(), key=operator.itemgetter(1))[0]
-#         except:
-#             print("err404or")
-#             return max(self.prior_class.items(), key=operator.itemgetter(1))[0]
-
-
-    
-
-
-
-
-# #         except:
-# #             print("err404or")
-# #             return max(self.prior_class.items(), key=operator.itemgetter(1))[0]
-
-# class MultinominalNaiveBayes:
-#     def __init__(self,alpha = 1):
-#         self.alpha = alpha
-        
-#     def train(self, X, y, fitur):
-#         self.X = X
-#         self.y = y
-#         self.fitur = fitur
-#         # print(X)
-#         self.len_fitur = len(X.A[0])
-# #         self.fitur = fitur
-        
-#         self.class_ = sorted(set(self.y))
-
-#         self.prior_class = dict(zip(Counter(self.y).keys(), Counter(self.y).values()))
-#         for key, value in self.prior_class.items():
-#             self.prior_class.update({key:value/len(self.y)})
-        
-#         #menghitung jumlah class
-#         self.len_data = len(self.y)
-
-#         #mencari index data untuk class tertentu
-#         self.dic_data_index = dict()
-#         for i in self.class_:
-#             isi_list = list()
-#             for index, j in enumerate(self.y):
-#         #         print(j)
-#                 if i == j:
-#                     isi_list.append(index)
-#             self.dic_data_index.update({i:isi_list})
-            
-#         self.dic_data_by_class = dict()
-#         for key, value in self.dic_data_index.items():
-#             self.dic_data_by_class.update({key:(self.X[value])})
-# #         dic_data_index
-
-#         self.posterior = dict()
-#         for c, value in self.dic_data_by_class.items():
-#             prob_fitur = list()
-#             sum_value  = value.sum()
-#             for ix, f in enumerate(value.transpose()):
-#                 prob_fitur.append((f.sum()+self.alpha)/(sum_value+self.len_fitur))
-#                 print(c,str(f.sum()), "+",str(self.alpha),"/", str(sum_value), str(self.len_fitur), self.fitur[ix])
-#             self.posterior.update({c:prob_fitur})
-# #         print(self.posterior)
-
-#     def predict(self, X_predict):
-#         self.X_predict = X_predict
-#         self.inf_dict = dict()
-#         for c in self.class_: 
-# #             self.sum_predict = dict()
-#             self.inf_dict.update({c:np.prod(np.power(self.posterior[c],self.X_predict))*self.prior_class[c]})
-#         return max(self.inf_dict.items(), key=operator.itemgetter(1))[0]
-
-# # class ComplementNaiveBayes:
-#     def __init__(self,alpha = 1):
-#         self.alpha = alpha
-        
-#     def train(self, X, y):
-#         self.X = X
-#         self.y = y
-#         self.len_fitur = len(X.A[0])
-# #         self.fitur = fitur
-        
-#         self.class_ = sorted(set(self.y))
-#         self.len_fitur = len(self.y)
-
-#         #mencari index data dengan class tertentu
-#         self.dic_data_index = dict()
-#         for i in self.class_:
-#             isi_list = list()
-#             for index, j in enumerate(self.y):
-#                 if i != j: #salah satu dari tahap complement
-#                     isi_list.append(index)
-#             self.dic_data_index.update({i:isi_list})
-            
-#         self.dic_data_by_class = dict()
-#         for key, value in self.dic_data_index.items():
-#             self.dic_data_by_class.update({key:(self.X[value])})
-
-#         self.complement = dict()
-#         for c, value in self.dic_data_by_class.items():
-#             prob_wci = list()
-#             sum_value  = value.sum()
-# #           Hitung Complement
-#             for f in value.transpose():
-#                 # f = f.sum() + (self.alpha*len(self.dic_data_index[c])) / sum_value+(self.alpha*len(self.dic_data_index[c]))
-#                 f = (f.sum() + self.alpha) / (sum_value+self.len_fitur)
-#                 wci = np.log(f)
-#                 prob_wci.append(wci)
-#             print(sum(prob_wci))
-#             norm_wci = np.array(prob_wci)#/np.sqrt()
-#             self.complement.update({c:norm_wci})
-
-#     def predict(self, X_predict):
-#         self.X_predict = X_predict
-#         self.inf_dict = dict()
-#         for c in self.class_:
-#             self.inf_dict.update({c:np.prod(np.power(self.complement[c],self.X_predict))})
-#         return min(self.inf_dict.items(), key=operator.itemgetter(1))[0]
-
-
-# import numpy as np
-# import operator
-
-
-# class NaiveBayesClassifier:
-#     def __init__(self):
-#         self.dic_data_index = dict()
-#         self.dic_data_by_class = dict()
-#         self.dic_data_posterior = dict()
-#         self.dic_data_prob_fitur = dict()
-#         self.prior = dict()
-#         self.class_ = 0
-
-#     def train (self, X, y):
-# #         print(X)
-#         self.X = X
-#         self.y = y
-
-#         self.X = [i.split() for i in self.X]
-
-#         self.X = np.array(self.X)
-#         self.y = np.array(self.y)
-#         self.class_ = sorted(set(y))
-
-#         for i in self.class_:
-#             isi_list = list()
-#             for index, j in enumerate(y):
-#         #         print(j)
-#                 if i == j:
-#                     isi_list.append(index)
-#             self.dic_data_index.update({i:isi_list})
-
-#         for key, value in self.dic_data_index.items():
-#             self.dic_data_by_class.update({key:(self.X[value])})
-#             self.prior.update({key:len(value)/len(self.y)})
-
-#         for key, value in self.dic_data_by_class.items():
-#             words = list()
-# #             print(value)
-#             for i in value:
-#                 for kata in set(i): #biner
-#                     words.append(kata)
-#             dict_fitur = dict()
-# #             fitur_bobot = list()
-#             for i in words:
-#                 prob_fitur_ = words.count(i)/len(words)
-#                 dict_fitur.update({i:prob_fitur_})
-# #                 fitur_bobot.append(prob_fitur_)
-#     #         print(np.prod(fitur_bobot))
-#             self.dic_data_prob_fitur.update({key:dict_fitur})
-# #             self.dic_data_posterior.update({key:np.prod(fitur_bobot)})
-
-#     def predict(self, X):
-#         X = X.split()
-#         try:
-#             self.dict_predict = dict()
-#             for c, value in self.dic_data_prob_fitur.items():
-                
-#                 bobot_fitur = list()
-#                 for kata in X:
-#     #                 print(kata)
-#                     if kata in value:
-#                         # print(c,kata,value[kata])
-#                         bobot_fitur.append(value[kata])
-#     #                     print(c, value[kata])
-#                 if len(bobot_fitur)>0:
-#                     post_prior = np.prod(bobot_fitur)*self.prior[c]
-#     #                 print(post_prior)
-#                     self.dict_predict.update({c:post_prior})
-#             return max(self.dict_predict.items(), key=operator.itemgetter(1))[0]
-#         except:
-#             print("err404or")
-#             return max(self.prior.items(), key=operator.itemgetter(1))[0]
-
-
-# class MultinominalNaiveBayes:
-#     def __init__(self, alpha=1):
-#         self.alpha = alpha
-#         self.dict_nb = 0
-        
-#     def train(self, X, y):
-#         self.class_ = sorted(set(y))
-#         self.prior = prior_(y)
-#         index_data = data_separate(y)
-#         self.an = len(X.A[0])
-#         self.X = X
-        
-#         self.dict_nb = dict()
-#         for c in self.class_:
-#             n_yi = np.sum(self.X[index_data[c]].A, axis=0)
-#             n_y = self.X[index_data[c]].A.sum()
-#             self.dict_nb.update({c:{}})
-#             self.dict_nb[c]['hat_theta'] = n_yi/(n_y+self.an)
-#             self.dict_nb[c]["n_y"] = n_y
-            
-#     def predict(self, X):
-#         self.X = X
-#         result = list()
-#         for i in self.X.A:
-#             list_pst = list()
-#             for c in self.class_:
-#                 laplace = self.alpha/(self.dict_nb[c]["n_y"]+self.an)
-#                 x = self.dict_nb[c]["hat_theta"]+laplace
-#                 posterior = np.prod(x**i)*self.prior[c]
-#                 list_pst.append(posterior)
-#             result.append(self.class_[list_pst.index(max(list_pst))])
-#         return result
 
