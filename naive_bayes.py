@@ -144,7 +144,7 @@ class NaiveBayesClassifier:
         
 
 class Gaussian():
-    def __init__(self,var_smoothing=.0009):
+    def __init__(self,var_smoothing=.00009):
         self.var_smoothing=var_smoothing
 
     def train(self, X, y):
