@@ -124,10 +124,10 @@ class NaiveBayesClassifier:
         return self.__dict_nb 
 
     @property
-    def class(self):
+    def classes(self):
         pass
-    @class.getter
-    def class(self):
+    @classes.getter
+    def classes(self):
         return self.__class_
 
     def predict(self, X_):
@@ -205,16 +205,16 @@ class Gaussian():
             self.__nb_dict[c]["stdev"]= stdev_fitur_(self.X[index])
 
     @property
-    def class(self):
+    def classes(self):
         pass
-    @class.getter
-    def class(self):
+    @classes.getter
+    def classes(self):
         return self.__class_
 
     @property
     def data(self):
         pass
-    @class.getter
+    @data.getter
     def data(self):
         return self.__nb_dict
 
