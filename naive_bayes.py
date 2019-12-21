@@ -83,33 +83,55 @@ def get_label(hasil, class__):
 
 class NaiveBayesClassifier:
     def __init__(self, alpha=1):
-        self.alpha = alpha
+        self.__alpha = alpha
+
+    @property
+    def alpha(self):
+        pass
+    @alpha.setter
+    def alpha(self, input):
+        self.__alpha = input
+    @alpha.getter
+    def alpha(self):
+        return self.__alpha
         
     def train(self, X, y):
-        self.dict_nb = dict()
+        # self.__dict_nb = dict()
         vectorizer = CountVectorizer(binary=True)
-        self.model_w = vectorizer.fit(X)
-        self.X = self.model_w.transform(X)
+        self.__model_w = vectorizer.fit(X)
+        self.X = self.__model_w.transform(X)
         
-        self.class_ = sorted(set(y))
+        self.__class_ = sorted(set(y))
         self.prior = prior_(y)
         index_data = data_separate(y)
-        self.an = self.X.shape[1]
+        self.__an = self.X.shape[1] #jumlah fitur
         if self.X.shape[0]!=len(y):
             return "jumlah data dan label tidak seimbang, jumlah data = "+str(self.X.shape[0])+" dan jumlah label = "+str(len(y))
  
-        self.dict_nb = dict()
-        for c in self.class_:
+        self.__dict_nb = dict()
+        for c in self.__class_:
             n_yi = np.sum(self.X[index_data[c]], axis=0)
             # n_y = len(self.X[index_data[c]].A)
             n_y = self.X[index_data[c]].shape[0]
-            self.dict_nb.update({c:{}})
-            self.dict_nb[c]["n_yi"] = n_yi
-            self.dict_nb[c]["n_y"] = n_y
-            
-            
+            self.__dict_nb.update({c:{}})
+            self.__dict_nb[c]["n_yi"] = n_yi
+            self.__dict_nb[c]["n_y"] = n_y
+    @property
+    def data(self):
+        pass
+    @data.getter
+    def data(self):
+        return self.__dict_nb 
+
+    @property
+    def class(self):
+        pass
+    @class.getter
+    def class(self):
+        return self.__class_
+
     def predict(self, X_):
-        self.X_ = self.model_w.transform(X_)
+        self.X_ = self.__model_w.transform(X_)
         result = list()
         for i in self.X_.A:
             index = list()
@@ -117,85 +139,116 @@ class NaiveBayesClassifier:
                 if f>0:
                     index.append(ix)
             if len(index)==0:
-                result.append(self.class_[0])
+                result.append(self.__class_[0])
                 continue
             list_pst = list()
-            for c in self.class_:
-                ny_i_ = self.dict_nb[c]["n_yi"].A[0][index]
+            for c in self.__class_:
+                ny_i_ = self.__dict_nb[c]["n_yi"].A[0][index]
                 # print(ny_i_)
-                weight = (ny_i_+self.alpha)/(self.dict_nb[c]["n_y"]+self.an)
+                weight = (ny_i_+self.__alpha)/(self.__dict_nb[c]["n_y"]+self.__an)
                 posterior = np.prod(weight)*self.prior[c]
                 list_pst.append(posterior)
-            result.append(self.class_[list_pst.index(max(list_pst))])
+            result.append(self.__class_[list_pst.index(max(list_pst))])
         return result
 
+    @property
+    def data(self):
+        pass
+    @data.getter
+    def data(self):
+        return self.__dict_nb 
+
     def predict_(self, X_):
-        self.X_ = self.model_w.transform(X_)
+        self.X_ = self.__model_w.transform(X_)
         dict_posterior = dict()
         list_posterior = list()
-        for c in self.class_:
+        for c in self.__class_:
             ny_i_ = self.dict_nb[c]["n_yi"].A[0]
-            weight = (ny_i_+self.alpha)/(self.dict_nb[c]["n_y"]+self.an)
+            weight = (ny_i_+self.__alpha)/(self.dict_nb[c]["n_y"]+self.__an)
             proud = np.prod(weight**self.X_.A, axis = 1)
             posterior = proud*self.prior[c]
             # dict_posterior.update({c:posterior})
             list_posterior.append(posterior)
-        return get_label(list_posterior, self.class_)
+        return get_label(list_posterior, self.__class_)
         
 
 class Gaussian():
     def __init__(self,var_smoothing=.0000000001):
-        self.var_smoothing=var_smoothing
+        self.__var_smoothing=var_smoothing
+
+    @property
+    def var_smoothing(self):
+        pass
+    @var_smoothing.getter
+    def var_smoothing(self):
+        return self.__var_smoothing
+    @var_smoothing.getter
+    def var_smoothing(self, input):
+        self.__var_smoothing = input
 
     def train(self, X, y):
         self.X = X
         self.y = np.array(y)
-        self.class_ = sorted(set(y))
-        self.nb_dict=dict()
+        self.__class_ = sorted(set(y))
+        self.__nb_dict=dict()
 
         unik = sorted(set(y))
         self.prior = prior_(y)
-        for c in self.class_:
+        for c in self.__class_:
             index = list()
             for i, c_ in enumerate(self.y):
                 if c==c_:
                     index.append(i)
-            self.nb_dict.update({c:{"mean":[]}})
-            self.nb_dict.update({c:{"stdev":[]}})
-            self.nb_dict[c]["mean"] = mean_fitur_(self.X[index])
-            self.nb_dict[c]["stdev"]= stdev_fitur_(self.X[index])
+            self.__nb_dict.update({c:{"mean":[]}})
+            self.__nb_dict.update({c:{"stdev":[]}})
+            self.__nb_dict[c]["mean"] = mean_fitur_(self.X[index])
+            self.__nb_dict[c]["stdev"]= stdev_fitur_(self.X[index])
+
+    @property
+    def class(self):
+        pass
+    @class.getter
+    def class(self):
+        return self.__class_
+
+    @property
+    def data(self):
+        pass
+    @class.getter
+    def data(self):
+        return self.__nb_dict
 
     def predict(self, X):
         result = list()
         for d in X.A:
             if d.sum==0:
-                result.append(self.class_[0])
+                result.append(self.__class_[0])
                 continue
             post_ = list()
-            for c in self.class_:
+            for c in self.__class_:
                 list_prob=list()
-                for v, mean_, stdev_ in zip(d.tolist(), self.nb_dict[c]["mean"].A[0],self.nb_dict[c]["stdev"].A[0]):
+                for v, mean_, stdev_ in zip(d.tolist(), self.__nb_dict[c]["mean"].A[0],self.__nb_dict[c]["stdev"].A[0]):
                     if v != 0:
-                        kiri = 1/np.sqrt((2*pi_)*((stdev_+self.var_smoothing)**2))
-                        kanan = np.exp(-(((v-mean_)**2)/(2*((stdev_+self.var_smoothing)**2))))
+                        kiri = 1/np.sqrt((2*pi_)*((stdev_+self.__var_smoothing)**2))
+                        kanan = np.exp(-(((v-mean_)**2)/(2*((stdev_+self.__var_smoothing)**2))))
                         list_prob.append(kanan*kiri)
                 post_.append(np.prod(list_prob)*self.prior[c])
-            result.append(self.class_[post_.index(max(post_))])
+            result.append(self.__class_[post_.index(max(post_))])
         return np.array(result)
 
     def predict_(self, X):
         result = list()
         self.list_posterior = list()
-        for c in self.class_:
+        for c in self.__class_:
             sqrt_2pi = np.sqrt((2*pi_))
-            stdev_ = (self.nb_dict[c]["stdev"].A[0]+self.var_smoothing)**2
-            mean_ = self.nb_dict[c]["mean"].A[0]
+            stdev_ = (self.__nb_dict[c]["stdev"].A[0]+self.__var_smoothing)**2
+            mean_ = self.__nb_dict[c]["mean"].A[0]
             kiri = 1/(sqrt_2pi*(stdev_))
             kanan = ((X.A-mean_)**2)/(2*stdev_)
             kanan = np.exp(-kanan)
             liklihood = (kanan*kiri)**X.A
             self.list_posterior.append(np.prod(liklihood, axis =1)*self.prior[c])
-        return np.array(get_label(self.list_posterior, self.class_))
+        return np.array(get_label(self.list_posterior, self.__class_))
 
 class MultinominalNaiveBayes:
     def __init__(self, alpha=1):
@@ -282,4 +335,3 @@ class ComplementNaiveBayes:
             return result
         except:
             return [self.class_[0]]
-
