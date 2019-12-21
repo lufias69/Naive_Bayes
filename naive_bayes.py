@@ -8,6 +8,7 @@ pi_ = math.pi
 from statistics import stdev, mean
 from scipy import sparse
 
+
 def vars(a, axis=None):
     """ Variance of sparse matrix a
     var = mean(a**2) - mean(a)**2
@@ -114,7 +115,7 @@ class NaiveBayesClassifier:
             # n_y = len(self.X[index_data[c]].A)
             n_y = self.X[index_data[c]].shape[0]
             self.__dict_nb.update({c:{}})
-            self.__dict_nb[c]["n_yi"] = n_yi
+            self.__dict_nb[c]["n_yi"] = sparse.csr_matrix(n_yi)
             self.__dict_nb[c]["n_y"] = n_y
     @property
     def data(self):
@@ -163,8 +164,8 @@ class NaiveBayesClassifier:
         dict_posterior = dict()
         list_posterior = list()
         for c in self.__class_:
-            ny_i_ = self.dict_nb[c]["n_yi"].A[0]
-            weight = (ny_i_+self.__alpha)/(self.dict_nb[c]["n_y"]+self.__an)
+            ny_i_ = self.__dict_nb[c]["n_yi"].A[0]
+            weight = (ny_i_+self.__alpha)/(self.__dict_nb[c]["n_y"]+self.__an)
             proud = np.prod(weight**self.X_.A, axis = 1)
             posterior = proud*self.prior[c]
             # dict_posterior.update({c:posterior})
